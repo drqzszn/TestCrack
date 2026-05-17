@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课堂快速提交</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:sans-serif;
+    background:#f3f7f4;
+    padding:10px;
+}
+
+.main{
+    max-width:950px;
+    margin:auto;
+    background:#fff;
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
+
+h1{
+    font-size:20px;
+    text-align:center;
+    margin-bottom:10px;
+    color:#1f6b45;
+}
+
+.top{
+    display:flex;
+    gap:10px;
+    margin-bottom:12px;
+}
+
+input[type=text]{
+    flex:1;
+    padding:10px;
+    border:1px solid #cfe0d6;
+    border-radius:10px;
+    font-size:14px;
+}
+
+#fastAnswer{
+    flex:2;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:8px;
+}
+
+.q{
+    background:#f7fbf8;
+    border:1px solid #dbe8e0;
+    border-radius:12px;
+    padding:8px;
+    text-align:center;
+}
+
+.q-title{
+    font-size:13px;
+    font-weight:bold;
+    margin-bottom:6px;
+}
+
+.opts{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:4px;
+}
+
+label{
+    background:white;
+    border:1px solid #cfded5;
+    border-radius:8px;
+    padding:5px;
+    font-size:13px;
+    cursor:pointer;
+    user-select:none;
+}
+
+input[type=radio]{
+    display:none;
+}
+
+label.active{
+    background:#dff4e7;
+    border-color:#2b8c5a;
+    color:#1f6b45;
+    font-weight:bold;
+}
+
+button{
+    width:100%;
+    margin-top:12px;
+    border:none;
+    background:#2b7a4e;
+    color:white;
+    padding:12px;
+    border-radius:12px;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.msg{
+    text-align:center;
+    margin-top:10px;
+    color:#1f6b45;
+    font-size:14px;
+}
+
+/* 悬浮框 */
+
+.float-box{
+    position:fixed;
+    right:15px;
+    top:15px;
+    width:280px;
+    background:white;
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.15);
+    z-index:999;
+    border:1px solid #dce8e1;
+}
+
+.float-title{
+    font-size:14px;
+    font-weight:bold;
+    margin-bottom:8px;
+    color:#1f6b45;
+}
+
+.float-box textarea{
+    width:100%;
+    height:120px;
+    resize:none;
+    border:1px solid #d5e2db;
+    border-radius:10px;
+    padding:8px;
+    font-size:13px;
+    outline:none;
+    margin-top:8px;
+    margin-bottom:8px;
+    background:#f8fbf9;
+}
+
+.float-box button{
+    width:100%;
+    border:none;
+    background:#2b7a4e;
+    color:white;
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    cursor:pointer;
+}
+
+.float-box button:hover{
+    background:#205f3d;
+}
+
+.float-box input[type=file]{
+    width:100%;
+    font-size:12px;
+}
+
+.api-box{
+    margin-top:8px;
+    padding:8px;
+    background:#f6faf7;
+    border:1px solid #d6e5dc;
+    border-radius:10px;
+    font-size:12px;
+    color:#1f6b45;
+    word-break:break-all;
+    line-height:1.5;
+}
+
+.api-title{
+    font-weight:bold;
+    margin-bottom:4px;
+}
+
+@media(max-width:900px){
+
+    .grid{
+        grid-template-columns:repeat(4,1fr);
+    }
+
+    .float-box{
+        position:static;
+        width:100%;
+        margin-bottom:12px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="float-box">
+
+    <div class="float-title">
+        📋 读取题库
+    </div>
+
+    <input type="file" id="htmlFile" accept=".html">
+
+    <textarea id="copyText" readonly>
+请选择 1.html
+    </textarea>
+
+    <button onclick="copyFloatText()">
+        一键复制答案
+    </button>
+
+    <div class="api-box">
+
+        <div class="api-title">
+            🌐 当前提交接口
+        </div>
+
+        <div id="apiText">
+            https://quickform.cn/api/l08wyimzdn
+        </div>
+
+    </div>
+
+</div>
+
+<div class="main">
+
+    <h1>📚 课堂快速提交</h1>
+
+    <div class="top">
+
+        <input 
+            type="text" 
+            id="name" 
+            placeholder="输入姓名"
+        >
+
+        <input 
+            type="text" 
+            id="fastAnswer"
+            placeholder="快速输入答案，例如：BACCDABCD..."
+        >
+
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <button onclick="submitData()">
+        ✅ 提交
+    </button>
+
+    <div class="msg" id="msg"></div>
+
+</div>
+
+<script>
+
+// 默认接口
+
+let API_URL = "https://quickform.cn/api/l08wyimzdn";
+
+const total = 20;
+
+const grid = document.getElementById("grid");
+
+// 生成题目
+
+for(let i=1;i<=total;i++){
+
+    grid.innerHTML += `
+    <div class="q">
+
+        <div class="q-title">${i}</div>
+
+        <div class="opts">
+
+            ${["A","B","C","D"].map(v=>`
+
+            <label>
+                <input type="radio" name="q${i}" value="${v}">
+                ${v}
+            </label>
+
+            `).join("")}
+
+        </div>
+
+    </div>
+    `;
+}
+
+// 选项高亮
+
+document.addEventListener("change",e=>{
+
+    if(e.target.type==="radio"){
+
+        document.querySelectorAll(
+            `input[name="${e.target.name}"]`
+        ).forEach(r=>{
+
+            r.parentElement.classList.remove("active");
+
+        });
+
+        e.target.parentElement.classList.add("active");
+    }
+});
+
+// 快速输入答案
+
+document.getElementById("fastAnswer")
+.addEventListener("input",function(){
+
+    let str=this.value.toUpperCase();
+
+    str=str.replace(/[^ABCD]/g,'');
+
+    this.value=str;
+
+    for(let i=0;i<total;i++){
+
+        const ans=str[i];
+
+        if(!ans) continue;
+
+        const radio=document.querySelector(
+            `input[name="q${i+1}"][value="${ans}"]`
+        );
+
+        if(radio){
+
+            radio.checked=true;
+
+            document.querySelectorAll(
+                `input[name="q${i+1}"]`
+            ).forEach(r=>{
+
+                r.parentElement.classList.remove("active");
+
+            });
+
+            radio.parentElement.classList.add("active");
+        }
+    }
+});
+
+// 提交
+
+async function submitData(){
+
+    const name=document.getElementById("name")
+    .value.trim();
+
+    if(!name){
+
+        alert("请输入姓名");
+
+        return;
+    }
+
+    let answers={};
+
+    for(let i=1;i<=total;i++){
+
+        const checked=document.querySelector(
+            `input[name="q${i}"]:checked`
+        );
+
+        answers["Q"+i]=checked?checked.value:"";
+    }
+
+    try{
+
+        await fetch(API_URL,{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+
+                student:name,
+
+                time:new Date().toISOString(),
+
+                answers:answers
+            })
+        });
+
+        document.getElementById("msg")
+        .innerText="✅ 提交成功";
+
+    }catch{
+
+        document.getElementById("msg")
+        .innerText="⚠️ 提交失败";
+    }
+}
+
+// 复制答案
+
+function copyFloatText(){
+
+    const text=document.getElementById("copyText");
+
+    navigator.clipboard.writeText(text.value);
+
+    alert("已复制");
+}
+
+// 读取本地 html
+
+document.getElementById("htmlFile")
+.addEventListener("change",function(e){
+
+    const file = e.target.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(){
+
+        try{
+
+            const html = reader.result;
+
+            // 提取 QUESTION_SET
+
+            const match = html.match(
+                /const\s+QUESTION_SET\s*=\s*(\[[\s\S]*?\]);/
+            );
+
+            if(match){
+
+                const QUESTION_SET = new Function(
+                    "return " + match[1]
+                )();
+
+                const answers = QUESTION_SET.map(q=>{
+
+                    const index =
+                    q.options.indexOf(q.correct);
+
+                    return ["A","B","C","D"][index] || "?";
+
+                }).join("");
+
+                document.getElementById("copyText")
+                .value = answers;
+
+            }else{
+
+                document.getElementById("copyText")
+                .value = "未找到 QUESTION_SET";
+            }
+
+            // 提取 fetch 接口
+
+            const apiMatch = html.match(
+                /fetch\(['"]([^'"]+)['"]/
+            );
+
+            if(apiMatch){
+
+                API_URL = apiMatch[1];
+
+                document.getElementById("apiText")
+                .innerText = API_URL;
+
+                console.log("已读取接口:",API_URL);
+            }
+
+        }catch(err){
+
+            console.error(err);
+
+            document.getElementById("copyText")
+            .value = "解析失败";
+        }
+    };
+
+    reader.readAsText(file);
+});
+
+</script>
+
+</body>
+</html>
